@@ -7,8 +7,10 @@ import './interface/IBlockJuice.sol';
 
 // TODO: Is AccessControl
 // TODO: EUR TO CRYPTO PRICES CHAINLINK
+// TODO: Platform fee
+contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
-contract BlockJuice is ERC1155, IBlockJuice {
+    bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
 
     // Mapping id to price
     mapping(uint256 => ProductInfo) public productInfo;
@@ -16,15 +18,18 @@ contract BlockJuice is ERC1155, IBlockJuice {
     uint256 private idOfNextProduct;
 
     constructor() ERC1155('TODO'){
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         idOfNextProduct = 0;
     }
 
-    // TODO: only specific role
     function registerProduct(uint256 amount, uint256 price) public {
-        // require 
-        _mint(msg.sender, idOfNextProduct, amount, '');
+        if(!hasRole(MERCHANT_ROLE, msg.sender))
+            revert InvalidRole();
+        
         productInfo[idOfNextProduct].productOwner = msg.sender;
         productInfo[idOfNextProduct].price = price;
+        _mint(msg.sender, idOfNextProduct, amount, '');
+        
         emit ProductRegistered(idOfNextProduct, amount, price);
         idOfNextProduct++;
     }
@@ -41,4 +46,7 @@ contract BlockJuice is ERC1155, IBlockJuice {
         emit ProductBought(id, amount, msg.sender);
     }
 
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 }

@@ -30,4 +30,9 @@ interface IBlockJuice {
     *   Thrown when msg.value is less than product value
     */
     error InvalidFunds();
+
+    /*
+    *   Thrown when msg.sender have unauthorized access
+    */
+    error InvalidRole();
 }
