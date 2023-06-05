@@ -22,6 +22,11 @@ interface IBlockJuice {
     event ProductBought(uint256 id, uint256 amount, address buyer);
 
     /*
+    *   Emited when product is bought on platform
+    */
+    event ProductRefilled(uint256 id, uint256 amount);
+
+    /*
     *   Thrown when product id does not exists
     */
     error InvalidProductID();
@@ -34,5 +39,5 @@ interface IBlockJuice {
     /*
     *   Thrown when msg.sender have unauthorized access
     */
-    error InvalidRole();
+    error UnauthorizedAccess();
 }

@@ -5,9 +5,9 @@ import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interface/IBlockJuice.sol';
 
-// TODO: Is AccessControl
 // TODO: EUR TO CRYPTO PRICES CHAINLINK
 // TODO: Platform fee
+// TODO: Burn kad se transfer
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
@@ -24,7 +24,7 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     function registerProduct(uint256 amount, uint256 price) public {
         if(!hasRole(MERCHANT_ROLE, msg.sender))
-            revert InvalidRole();
+            revert UnauthorizedAccess();
         
         productInfo[idOfNextProduct].productOwner = msg.sender;
         productInfo[idOfNextProduct].price = price;
@@ -34,16 +34,24 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         idOfNextProduct++;
     }
 
+    function refillProductAmount(uint256 productId, uint256 amount) public {
+        if(productInfo[productId].productOwner != msg.sender)
+            revert UnauthorizedAccess();
+        
+        _mint(msg.sender, productId, amount, '');
+        emit ProductRefilled(productId, amount);
+    }
+
     // TODO: buyProductBatch
-    function buyProduct(uint256 id, uint256 amount) public payable {
-        if(productInfo[id].price * amount > msg.value)
+    function buyProduct(uint256 productId, uint256 amount) public payable {
+        if(productInfo[productId].price * amount > msg.value)
             revert InvalidFunds();
-        if(id > idOfNextProduct) 
+        if(productId > idOfNextProduct) 
             revert InvalidProductID();
         
         // TODO: Inspect (does transfer needs approval?)
-        _safeTransferFrom(productInfo[id].productOwner, msg.sender, id, amount, '');
-        emit ProductBought(id, amount, msg.sender);
+        _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
+        emit ProductBought(productId, amount, msg.sender);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
