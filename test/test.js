@@ -15,6 +15,8 @@ describe('BlockJuice', () => {
 
         // Mint dummy products(for testing purpose)
         await BlockJuiceContract.registerProduct(3000, ethers.utils.parseUnits('0.1'));
+        await BlockJuiceContract.registerProduct(10, ethers.utils.parseUnits('0.3'));
+        await BlockJuiceContract.registerProduct(50, ethers.utils.parseUnits('0.2'));
         const DUMMY_PRODUCT_ID = 0;
 
         return { BlockJuiceContract, owner, alt1, alt2, DUMMY_PRODUCT_ID, MERCHANT_ROLE };
@@ -34,8 +36,8 @@ describe('BlockJuice', () => {
             await BlockJuiceContract.grantRole(MERCHANT_ROLE, alt1.address);
 
             await expect(BlockJuiceContract.connect(alt1).registerProduct(amount, price))
-                .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt1.address, ethers.constants.AddressZero, alt1.address, DUMMY_PRODUCT_ID + 1, amount)
-                .to.emit(BlockJuiceContract, 'ProductRegistered').withArgs(DUMMY_PRODUCT_ID + 1, amount, price);
+                .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt1.address, ethers.constants.AddressZero, alt1.address, DUMMY_PRODUCT_ID + 3, amount)
+                .to.emit(BlockJuiceContract, 'ProductRegistered').withArgs(DUMMY_PRODUCT_ID + 3, amount, price);
         });
 
         it('Should buy product', async () => {
@@ -49,6 +51,22 @@ describe('BlockJuice', () => {
                 .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt2.address, owner.address, ethers.constants.AddressZero, DUMMY_PRODUCT_ID, amount)
                 //.to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt2.address, owner.address, alt2.address, DUMMY_PRODUCT_ID, amount)
                 .to.emit(BlockJuiceContract, 'ProductBought');
+        });
+
+        it('Should buy multiple products', async () => {
+            const { BlockJuiceContract, alt2 } = await loadFixture(setupFixture);
+
+            await expect(BlockJuiceContract.connect(alt2).buyProductBatch([0, 1, 2], [10, 10], { value: ethers.utils.parseUnits('10') }))
+                .to.revertedWithCustomError(BlockJuiceContract, 'InvalidQuery'); 
+
+            await expect(BlockJuiceContract.connect(alt2).buyProductBatch([0, 1, 3], [10, 10, 10], { value: ethers.utils.parseUnits('10') }))
+                .to.revertedWithCustomError(BlockJuiceContract, 'InvalidProductID');
+
+            await expect(BlockJuiceContract.connect(alt2).buyProductBatch([0, 1, 2], [10, 10, 10], { value: ethers.utils.parseUnits('1') }))
+                .to.revertedWithCustomError(BlockJuiceContract, 'InvalidFunds');
+
+            await expect(BlockJuiceContract.connect(alt2).buyProductBatch([0, 1, 2], [10, 10, 10], { value: ethers.utils.parseUnits('10') }))
+                .to.emit(BlockJuiceContract, 'ProductsBought').withArgs([0, 1, 2], [10, 10, 10], alt2.address);
         });
 
         it('Should refill product amount', async () => {
