@@ -8,11 +8,8 @@ import './interface/IBlockJuice.sol';
 import 'hardhat/console.sol';
 
 // TODO: EUR TO CRYPTO PRICES CHAINLINK
-// TODO: Platform fee
-// TODO: Burn kad se transfer
-// TODO: Change
 // TODO: fallback function
-// TODO: Merchant balances, owner balance
+// TODO: Fee on buyProductBatch
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
@@ -20,11 +17,17 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     // Mapping id to product info
     mapping(uint256 => ProductInfo) public productInfo;
 
-    uint256 private idOfNextProduct;
+    // Mapping merchant addresses to their balances
+    mapping(address => uint256) private merchantBalances;
 
-    constructor() ERC1155('TODO'){
+    uint256 private idOfNextProduct;
+    uint256 private ownerBalance;
+    uint256 private platformFee;
+
+    constructor(uint256 _platfromFee) ERC1155('TODO'){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         idOfNextProduct = 0;
+        platformFee = _platfromFee;
     }
 
     function registerProduct(uint256 amount, uint256 price) public {
@@ -52,9 +55,16 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
             revert InvalidFunds();
         if(productId >= idOfNextProduct) 
             revert InvalidProductID();
+
+        address productOwner = productInfo[productId].productOwner;
+
+        // Calculate fee and split balances
+        uint256 feeCalculated = (msg.value * platformFee) / 10000;
+        merchantBalances[productOwner] += msg.value - feeCalculated;
+        ownerBalance += feeCalculated;
         
-        // TODO: Before burn _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
-        _burn(productInfo[productId].productOwner, productId, amount);
+        // TODO: Before: burn _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
+        _burn(productOwner, productId, amount);
         emit ProductBought(productId, amount, msg.sender);
     }
 
@@ -75,6 +85,17 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
             revert InvalidFunds();
 
         emit ProductsBought(productIds, amounts, msg.sender);
+    }
+    
+    function merchantWithdraw() public payable {
+        if(merchantBalances[msg.sender] == 0)
+            revert InvalidFunds();
+
+        uint256 tmp = merchantBalances[msg.sender];
+        merchantBalances[msg.sender] = 0;
+
+        payable(msg.sender).transfer(tmp);
+        emit MerchantWithdrawn(msg.sender);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {

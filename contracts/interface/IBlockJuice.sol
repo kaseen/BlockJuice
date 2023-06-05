@@ -32,6 +32,11 @@ interface IBlockJuice {
     event ProductRefilled(uint256 id, uint256 amount);
 
     /**
+     * Emited when merchant withdraws funds
+     */
+    event MerchantWithdrawn(address merchant);
+
+    /**
      *  Thrown when product id does not exists
      */
     error InvalidProductID();
