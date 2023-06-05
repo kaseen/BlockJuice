@@ -17,12 +17,6 @@ describe('BlockJuice', () => {
         await BlockJuiceContract.registerProduct(3000, ethers.utils.parseUnits('0.1'));
         const DUMMY_PRODUCT_ID = 0;
 
-        /*
-        console.log(owner.address)
-        console.log(alt1.address)
-        console.log(alt2.address)
-        */
-
         return { BlockJuiceContract, owner, alt1, alt2, DUMMY_PRODUCT_ID, MERCHANT_ROLE };
     }
 
@@ -52,7 +46,8 @@ describe('BlockJuice', () => {
                 .to.revertedWithCustomError(BlockJuiceContract, 'InvalidFunds');
 
             await expect(BlockJuiceContract.connect(alt2).buyProduct(DUMMY_PRODUCT_ID, amount, { value: ethers.utils.parseUnits('1') }))
-                .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt2.address, owner.address, alt2.address, DUMMY_PRODUCT_ID, amount)
+                .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt2.address, owner.address, ethers.constants.AddressZero, DUMMY_PRODUCT_ID, amount)
+                //.to.emit(BlockJuiceContract, 'TransferSingle').withArgs(alt2.address, owner.address, alt2.address, DUMMY_PRODUCT_ID, amount)
                 .to.emit(BlockJuiceContract, 'ProductBought');
         });
 
@@ -73,5 +68,4 @@ describe('BlockJuice', () => {
             expect(afterRefill.eq(beforeRefill.add(amount))).to.be.equal(true);
         });
     });
-
 });

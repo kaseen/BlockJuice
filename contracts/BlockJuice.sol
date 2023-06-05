@@ -8,6 +8,7 @@ import './interface/IBlockJuice.sol';
 // TODO: EUR TO CRYPTO PRICES CHAINLINK
 // TODO: Platform fee
 // TODO: Burn kad se transfer
+// TODO: Change
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
@@ -49,8 +50,8 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         if(productId > idOfNextProduct) 
             revert InvalidProductID();
         
-        // TODO: Inspect (does transfer needs approval?)
-        _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
+        // TODO: Before burn _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
+        _burn(productInfo[productId].productOwner, productId, amount);
         emit ProductBought(productId, amount, msg.sender);
     }
 
