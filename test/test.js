@@ -23,8 +23,8 @@ describe('BlockJuice', () => {
         return { BlockJuiceContract, owner, testUser, testMerchant, notMerchant, DUMMY_PRODUCT_ID, MERCHANT_ROLE };
     }
 
-    describe('Test', () => {
-        it('Should grant MERCHANT_ROLE and add new product', async () => {
+    describe('Tests:', () => {
+        it('Test adding new product to platform', async () => {
             const { BlockJuiceContract, notMerchant, DUMMY_PRODUCT_ID, MERCHANT_ROLE } = await loadFixture(setupFixture);
             const amount = 3000;
             const price = ethers.utils.parseUnits('0.1');
@@ -41,7 +41,7 @@ describe('BlockJuice', () => {
                 .to.emit(BlockJuiceContract, 'ProductRegistered').withArgs(DUMMY_PRODUCT_ID + 3, amount, price);
         });
 
-        it('Should test buyProduct function', async () => {
+        it('Test buyProduct function', async () => {
             const { BlockJuiceContract, testMerchant, testUser, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
             const amount = 10;
 
@@ -54,7 +54,7 @@ describe('BlockJuice', () => {
                 .to.emit(BlockJuiceContract, 'ProductBought').withArgs(DUMMY_PRODUCT_ID, amount, testUser.address);
         });
 
-        it('Should test buyProductBatch function', async () => {
+        it('Test buyProductBatch function', async () => {
             const { BlockJuiceContract, testUser } = await loadFixture(setupFixture);
 
             await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 2], [10, 10], { value: ethers.utils.parseUnits('10') }))
@@ -70,11 +70,10 @@ describe('BlockJuice', () => {
                 .to.emit(BlockJuiceContract, 'ProductsBought').withArgs([0, 1, 2], [10, 10, 10], testUser.address);
         });
 
-        it('Should refill product amount', async () => {
+        it('Test authentication functions for merchant', async () => {
             const { BlockJuiceContract, testMerchant, notMerchant, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
             const amount = 100;
 
-            // notMerchant is not owner of product expect revert
             await expect(BlockJuiceContract.connect(notMerchant).refillProductAmount(DUMMY_PRODUCT_ID, amount))
                 .to.revertedWithCustomError(BlockJuiceContract, 'UnauthorizedAccess');
 
@@ -85,9 +84,12 @@ describe('BlockJuice', () => {
 
             const afterRefill = await BlockJuiceContract.balanceOf(testMerchant.address, DUMMY_PRODUCT_ID);
             expect(afterRefill.eq(beforeRefill.add(amount))).to.be.equal(true);
+
+            await expect(BlockJuiceContract.connect(testMerchant).merchantChangePrice(DUMMY_PRODUCT_ID, 123))
+                .to.emit(BlockJuiceContract, 'ProductPriceChanged').withArgs(DUMMY_PRODUCT_ID, 123);
         });
 
-        it('Should test functions with withdrawal', async () => {
+        it('Test authentication functions with withdrawal', async () => {
             const { BlockJuiceContract, owner, testUser, testMerchant, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
 
             const amount = 10;

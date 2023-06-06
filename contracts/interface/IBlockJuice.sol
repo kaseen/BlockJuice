@@ -8,18 +8,18 @@ interface IBlockJuice {
      */
     struct ProductInfo {
         address productOwner;
-        uint256 price;
+        uint256 priceInDollars;
     }
 
     /**
      *  Emited when product is registered on platform
      */
-    event ProductRegistered(uint256 id, uint256 amount, uint256 value);
+    event ProductRegistered(uint256 productId, uint256 amount, uint256 value);
 
     /**
      *  Emited when product is bought on platform
      */
-    event ProductBought(uint256 id, uint256 amount, address buyer);
+    event ProductBought(uint256 productId, uint256 amount, address buyer);
 
     /**
      *  Emited when multiple products are bought on platform
@@ -29,7 +29,12 @@ interface IBlockJuice {
     /**
      *  Emited when product is bought on platform
      */
-    event ProductRefilled(uint256 id, uint256 amount);
+    event ProductRefilled(uint256 productId, uint256 amount);
+
+    /**
+     *  Emited when price of product price with given id is changed
+     */
+    event ProductPriceChanged(uint256 productId, uint256 newPrice);
 
     /**
      *  Emited when merchant or owner withdraws funds

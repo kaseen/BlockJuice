@@ -35,26 +35,6 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         platformFee = _platfromFee;
     }
 
-    function registerProduct(uint256 amount, uint256 price) public {
-        if(!hasRole(MERCHANT_ROLE, msg.sender))
-            revert UnauthorizedAccess();
-        
-        productInfo[idOfNextProduct].productOwner = msg.sender;
-        productInfo[idOfNextProduct].price = price;
-        _mint(msg.sender, idOfNextProduct, amount, '');
-        
-        emit ProductRegistered(idOfNextProduct, amount, price);
-        idOfNextProduct++;
-    }
-
-    function refillProductAmount(uint256 productId, uint256 amount) public {
-        if(productInfo[productId].productOwner != msg.sender)
-            revert UnauthorizedAccess();
-        
-        _mint(msg.sender, productId, amount, '');
-        emit ProductRefilled(productId, amount);
-    }
-
     function buyProduct(uint256 productId, uint256 amount) public payable {
         if(convertDollarToPriceInCrypto(productId) * amount != msg.value)
             revert InvalidFunds();
@@ -82,7 +62,7 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
             uint256 productId = productIds[i];
             if(productId >= idOfNextProduct) 
                 revert InvalidProductID();
-            totalCost += productInfo[productId].price * amounts[i];
+            totalCost += productInfo[productId].priceInDollars * amounts[i];
             _burn(productInfo[productId].productOwner, productId, amounts[i]);
         }
 
@@ -96,15 +76,43 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         //(,int price,,,) = dataFeed.latestRoundData(); TODO
         int256 price = 180000000000; // hardcoded value ($1800) for local testing
         uint256 adjustedPrice = uint256(price) * 10 ** 10;
-        uint256 priceInUsd = productInfo[productId].price * (10 ** 18);
+        uint256 priceInUsd = productInfo[productId].priceInDollars * (10 ** 18);
         uint256 priceInCrypto = (priceInUsd * 10 ** 18) / adjustedPrice;
 
         return priceInCrypto;
     }
 
     /**
-     *      Authentication methods
+     *      Authentication functions for merchants
      */
+
+    function registerProduct(uint256 amount, uint256 price) public {
+        if(!hasRole(MERCHANT_ROLE, msg.sender))
+            revert UnauthorizedAccess();
+        
+        productInfo[idOfNextProduct].productOwner = msg.sender;
+        productInfo[idOfNextProduct].priceInDollars = price;
+        _mint(msg.sender, idOfNextProduct, amount, '');
+        
+        emit ProductRegistered(idOfNextProduct, amount, price);
+        idOfNextProduct++;
+    }
+
+    function refillProductAmount(uint256 productId, uint256 amount) public {
+        if(productInfo[productId].productOwner != msg.sender)
+            revert UnauthorizedAccess();
+        
+        _mint(msg.sender, productId, amount, '');
+        emit ProductRefilled(productId, amount);
+    }
+
+    function merchantChangePrice(uint256 productId, uint256 newPrice) public {
+        if(productInfo[productId].productOwner != msg.sender)
+            revert UnauthorizedAccess();
+
+        productInfo[productId].priceInDollars = newPrice;
+        emit ProductPriceChanged(productId, newPrice);
+    }
     
     function merchantWithdraw() public payable {
         if(merchantBalances[msg.sender] == 0)
@@ -116,6 +124,10 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         payable(msg.sender).transfer(tmp);
         emit FundsWithdrawn(msg.sender);
     }
+
+    /**
+     *      Authentication functions for owner
+     */
 
     function ownerWithdraw() public payable {
         if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender))
