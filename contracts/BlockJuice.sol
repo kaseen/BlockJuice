@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interface/IBlockJuice.sol';
@@ -20,12 +21,16 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     // Mapping merchant addresses to their balances
     mapping(address => uint256) private merchantBalances;
 
+    // Chainlink interface for using data feeds
+    AggregatorV3Interface private dataFeed;
+
     uint256 private idOfNextProduct;
     uint256 private ownerBalance;
     uint256 private platformFee;
 
     constructor(uint256 _platfromFee) ERC1155('TODO'){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        dataFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
         idOfNextProduct = 0;
         platformFee = _platfromFee;
     }
@@ -86,6 +91,17 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
         emit ProductsBought(productIds, amounts, msg.sender);
     }
+
+    function getLatestData() public view returns (int) {
+        // TODO: for local testing
+        // return 1800;
+        (,int answer,,,) = dataFeed.latestRoundData();
+        return answer;
+    }
+
+    /**
+     *      Authenication methods
+     */
     
     function merchantWithdraw() public payable {
         if(merchantBalances[msg.sender] == 0)
@@ -120,6 +136,14 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         emit OwnerChanged(newOwner);
+    }
+
+    function setDataFeedAddress(address newAddress) public {
+        if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender))
+            revert UnauthorizedAccess();
+
+        dataFeed = AggregatorV3Interface(newAddress);
+        emit DataFeedAddressChanged(newAddress);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {

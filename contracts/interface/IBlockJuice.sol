@@ -42,6 +42,11 @@ interface IBlockJuice {
     event OwnerChanged(address newOwner);
 
     /**
+     *  Emited when address of chainlink data feed is changed
+     */
+    event DataFeedAddressChanged(address newAddress);
+
+    /**
      *  Thrown when product id does not exists
      */
     error InvalidProductID();
