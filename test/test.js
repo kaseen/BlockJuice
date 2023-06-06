@@ -15,7 +15,7 @@ describe('BlockJuice', () => {
         await BlockJuiceContract.grantRole(MERCHANT_ROLE, testMerchant.address);
 
         // Mint dummy products(for testing purpose)
-        await BlockJuiceContract.connect(testMerchant).registerProduct(3000, ethers.utils.parseUnits('0.1'));
+        await BlockJuiceContract.connect(testMerchant).registerProduct(3000, 10);  // changing price will break tests
         await BlockJuiceContract.connect(testMerchant).registerProduct(10, ethers.utils.parseUnits('0.3'));
         await BlockJuiceContract.connect(testMerchant).registerProduct(50, ethers.utils.parseUnits('0.2'));
         const DUMMY_PRODUCT_ID = 0;
@@ -45,10 +45,10 @@ describe('BlockJuice', () => {
             const { BlockJuiceContract, testMerchant, testUser, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
             const amount = 10;
 
-            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: ethers.utils.parseUnits('0.1') }))
+            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: ethers.utils.parseUnits('0') }))
                 .to.revertedWithCustomError(BlockJuiceContract, 'InvalidFunds');
 
-            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: ethers.utils.parseUnits('1') }))
+            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: '55555555555555550' }))
                 .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(testUser.address, testMerchant.address, ethers.constants.AddressZero, DUMMY_PRODUCT_ID, amount)
                 //.to.emit(BlockJuiceContract, 'TransferSingle').withArgs(testUser.address, testMerchant.address, testUser.address, DUMMY_PRODUCT_ID, amount)
                 .to.emit(BlockJuiceContract, 'ProductBought').withArgs(DUMMY_PRODUCT_ID, amount, testUser.address);
@@ -91,9 +91,9 @@ describe('BlockJuice', () => {
             const { BlockJuiceContract, owner, testUser, testMerchant, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
 
             const amount = 10;
-            const value = ethers.utils.parseUnits('1');
+            const value = '55555555555555550';
 
-            await BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, 10, { value: ethers.utils.parseUnits('1') });
+            await BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: value });
 
             await expect(BlockJuiceContract.ownerWithdraw())
                 .to.emit(BlockJuiceContract, 'FundsWithdrawn').withArgs(owner.address);

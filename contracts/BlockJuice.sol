@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interface/IBlockJuice.sol';
 
 import 'hardhat/console.sol';
 
-// TODO: EUR TO CRYPTO PRICES CHAINLINK
 // TODO: fallback function
 // TODO: Fee on buyProductBatch
+// TODO: Merchant can change product price
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
@@ -56,7 +56,7 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     }
 
     function buyProduct(uint256 productId, uint256 amount) public payable {
-        if(productInfo[productId].price * amount > msg.value)
+        if(convertDollarToPriceInCrypto(productId) * amount != msg.value)
             revert InvalidFunds();
         if(productId >= idOfNextProduct) 
             revert InvalidProductID();
@@ -92,15 +92,18 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         emit ProductsBought(productIds, amounts, msg.sender);
     }
 
-    function getLatestData() public view returns (int) {
-        // TODO: for local testing
-        // return 1800;
-        (,int answer,,,) = dataFeed.latestRoundData();
-        return answer;
+    function convertDollarToPriceInCrypto(uint256 productId) public view returns (uint256) {
+        //(,int price,,,) = dataFeed.latestRoundData(); TODO
+        int256 price = 180000000000; // hardcoded value ($1800) for local testing
+        uint256 adjustedPrice = uint256(price) * 10 ** 10;
+        uint256 priceInUsd = productInfo[productId].price * (10 ** 18);
+        uint256 priceInCrypto = (priceInUsd * 10 ** 18) / adjustedPrice;
+
+        return priceInCrypto;
     }
 
     /**
-     *      Authenication methods
+     *      Authentication methods
      */
     
     function merchantWithdraw() public payable {
