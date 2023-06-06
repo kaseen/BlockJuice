@@ -9,7 +9,6 @@ import './interface/IBlockJuice.sol';
 import 'hardhat/console.sol';
 
 // TODO: Different fee for each product
-// TODO: fallback function
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
