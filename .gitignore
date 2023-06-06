@@ -5,3 +5,5 @@ README.md
 yarn-error.log
 tmp.txt
 .env
+yarn.lock
+package-lock.json

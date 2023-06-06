@@ -45,10 +45,10 @@ describe('BlockJuice', () => {
             const { BlockJuiceContract, testMerchant, testUser, DUMMY_PRODUCT_ID } = await loadFixture(setupFixture);
             const amount = 10;
 
-            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: ethers.utils.parseUnits('0') }))
+            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, 0, { value: ethers.utils.parseUnits('0') }))
                 .to.revertedWithCustomError(BlockJuiceContract, 'InvalidFunds');
 
-            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: '55555555555555550' }))
+            await expect(BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, 0, { value: '55555555555555550' }))
                 .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(testUser.address, testMerchant.address, ethers.constants.AddressZero, DUMMY_PRODUCT_ID, amount)
                 //.to.emit(BlockJuiceContract, 'TransferSingle').withArgs(testUser.address, testMerchant.address, testUser.address, DUMMY_PRODUCT_ID, amount)
                 .to.emit(BlockJuiceContract, 'ProductBought').withArgs(DUMMY_PRODUCT_ID, amount, testUser.address);
@@ -95,7 +95,7 @@ describe('BlockJuice', () => {
             const amount = 10;
             const value = '55555555555555550';
 
-            await BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, { value: value });
+            await BlockJuiceContract.connect(testUser).buyProduct(DUMMY_PRODUCT_ID, amount, 0, { value: value });
 
             await expect(BlockJuiceContract.ownerWithdraw())
                 .to.emit(BlockJuiceContract, 'FundsWithdrawn').withArgs(owner.address);

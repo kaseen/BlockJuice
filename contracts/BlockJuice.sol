@@ -6,8 +6,6 @@ import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interface/IBlockJuice.sol';
 
-import 'hardhat/console.sol';
-
 // TODO: Different fee for each product
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
@@ -26,28 +24,45 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     uint256 private ownerBalance;
     uint256 private platformFee;
 
-    constructor(uint256 _platfromFee, address chainlinkPriceFeedAddress) ERC1155('TODO'){
+    constructor(uint256 _platfromFee, address chainlinkPriceFeedAddress) ERC1155(''){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         dataFeed = AggregatorV3Interface(chainlinkPriceFeedAddress);
         idOfNextProduct = 0;
         platformFee = _platfromFee;
     }
 
-    function buyProduct(uint256 productId, uint256 amount) public payable {
-        if(calculatePriceInEth(productInfo[productId].priceInDollars, getLatestData()) * amount != msg.value)
-            revert InvalidFunds();
-        if(productId >= idOfNextProduct) 
+    function buyProduct(uint256 productId, uint256 amount, uint256 tip) public payable {
+        uint256 costForProducts = calculatePriceInEth(productInfo[productId].priceInDollars, getLatestData()) * amount;
+
+        if(productId >= idOfNextProduct)
             revert InvalidProductID();
+        // TODO: Fixed tip of 3%
+        if(tip == 3 && amount > 1)
+            revert InvalidQuery();
+        if((costForProducts * (100 + tip)) / 100 > msg.value)
+            revert InvalidFunds();
+
+        bool winner = false;
+        // TODO: Fixed 5% of winning
+        if(tip > 0)
+            winner = playTipLottery(productId + idOfNextProduct + ownerBalance);
 
         address productOwner = productInfo[productId].productOwner;
 
         // Calculate fee and split balances
-        uint256 feeCalculated = (msg.value * platformFee) / 10000;
-        merchantBalances[productOwner] += msg.value - feeCalculated;
-        ownerBalance += feeCalculated;
+        uint256 feeCalculated = (costForProducts * platformFee) / 10000;
+        uint256 merchantEarned = costForProducts - feeCalculated;
+        merchantBalances[productOwner] += merchantEarned;
+        ownerBalance += msg.value - merchantEarned;
         
         // TODO: Before: burn _safeTransferFrom(productInfo[productId].productOwner, msg.sender, productId, amount, '');
         _burn(productOwner, productId, amount);
+
+        if(winner){
+            // TODO: Merchant does not get any fee from lottery
+            _burn(productOwner, productId, 1);
+            emit LotteryWon(msg.sender, productId);
+        }
         emit ProductBought(productId, amount, msg.sender);
     }
 
@@ -76,15 +91,15 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
             _burn(productInfo[productId].productOwner, productId, amounts[i]);
         }
 
-        if(totalCost != msg.value)
+        if(totalCost > msg.value)
             revert InvalidFunds();
 
         emit ProductsBought(productIds, amounts, msg.sender);
     }
 
     function getLatestData() public view returns (int) {
-        //(,int price,,,) = dataFeed.latestRoundData(); TODO
-        int256 price = 180000000000; // hardcoded value ($1800) for local testing
+        (,int price,,,) = dataFeed.latestRoundData();
+        //int256 price = 180000000000; // hardcoded value ($1800) for local testing
         return price;
     }
 
@@ -94,6 +109,12 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         uint256 priceInCrypto = (priceInUsd * 10 ** 18) / adjustedEthPrice;
 
         return priceInCrypto;
+    }
+
+    function playTipLottery(uint256 seed) private view returns (bool) {
+        uint256 result = uint256(keccak256(abi.encodePacked(seed, block.timestamp))) % 100;
+        // TODO: Hardcoded value
+        return result < 5;
     }
 
     /**

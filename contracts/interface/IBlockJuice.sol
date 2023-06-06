@@ -9,6 +9,7 @@ interface IBlockJuice {
     struct ProductInfo {
         address productOwner;
         uint256 priceInDollars;
+        string productUri;
     }
 
     /**
@@ -50,6 +51,11 @@ interface IBlockJuice {
      *  Emited when address of chainlink data feed is changed
      */
     event DataFeedAddressChanged(address newAddress);
+
+    /**
+     *  Emited when user wins lottery
+     */
+    event LotteryWon(address user, uint256 productId);
 
     /**
      *  Thrown when product id does not exists
