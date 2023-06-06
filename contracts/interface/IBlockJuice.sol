@@ -32,9 +32,14 @@ interface IBlockJuice {
     event ProductRefilled(uint256 id, uint256 amount);
 
     /**
-     * Emited when merchant withdraws funds
+     *  Emited when merchant or owner withdraws funds
      */
-    event MerchantWithdrawn(address merchant);
+    event FundsWithdrawn(address user);
+
+    /**
+     *  Emited when owner of BlockJuice is changed
+     */
+    event OwnerChanged(address newOwner);
 
     /**
      *  Thrown when product id does not exists

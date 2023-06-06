@@ -95,7 +95,31 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
         merchantBalances[msg.sender] = 0;
 
         payable(msg.sender).transfer(tmp);
-        emit MerchantWithdrawn(msg.sender);
+        emit FundsWithdrawn(msg.sender);
+    }
+
+    function ownerWithdraw() public payable {
+        if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender))
+            revert UnauthorizedAccess();
+
+        if(ownerBalance == 0)
+            revert InvalidFunds();
+
+        uint256 tmp = ownerBalance;
+        ownerBalance = 0;
+
+        payable(msg.sender).transfer(tmp);
+        emit FundsWithdrawn(msg.sender); 
+    }
+
+    function transferOwnership(address newOwner) public {
+        if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender))
+            revert UnauthorizedAccess();
+
+        grantRole(DEFAULT_ADMIN_ROLE, newOwner);
+        revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        emit OwnerChanged(newOwner);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
