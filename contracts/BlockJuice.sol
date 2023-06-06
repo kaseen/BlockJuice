@@ -8,9 +8,8 @@ import './interface/IBlockJuice.sol';
 
 import 'hardhat/console.sol';
 
+// TODO: Different fee for each product
 // TODO: fallback function
-// TODO: Fee on buyProductBatch
-// TODO: Merchant can change product price
 contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     bytes32 public constant MERCHANT_ROLE = keccak256('MERCHANT_ROLE');
@@ -28,15 +27,15 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     uint256 private ownerBalance;
     uint256 private platformFee;
 
-    constructor(uint256 _platfromFee) ERC1155('TODO'){
+    constructor(uint256 _platfromFee, address chainlinkPriceFeedAddress) ERC1155('TODO'){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        dataFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        dataFeed = AggregatorV3Interface(chainlinkPriceFeedAddress);
         idOfNextProduct = 0;
         platformFee = _platfromFee;
     }
 
     function buyProduct(uint256 productId, uint256 amount) public payable {
-        if(convertDollarToPriceInCrypto(productId) * amount != msg.value)
+        if(calculatePriceInEth(productInfo[productId].priceInDollars, getLatestData()) * amount != msg.value)
             revert InvalidFunds();
         if(productId >= idOfNextProduct) 
             revert InvalidProductID();
@@ -58,26 +57,42 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
             revert InvalidQuery();
 
         uint256 totalCost = 0;
-        for(uint256 i; i < productIds.length; ++i){
+        int256 ethPrice = getLatestData();
+        uint256 n = productIds.length;
+
+        for(uint256 i; i < n; ++i){
             uint256 productId = productIds[i];
+
             if(productId >= idOfNextProduct) 
                 revert InvalidProductID();
-            totalCost += productInfo[productId].priceInDollars * amounts[i];
+
+            uint256 currentPrice = calculatePriceInEth(productInfo[productId].priceInDollars, ethPrice) * amounts[i];
+            totalCost += currentPrice;
+
+            // Fee splitting between merchant and owner (TODO: For different products different fee calculation)
+            uint256 feeCalculated = (currentPrice * platformFee) / 10000;
+            merchantBalances[productInfo[productId].productOwner] += currentPrice - feeCalculated;
+            ownerBalance += feeCalculated;
+
             _burn(productInfo[productId].productOwner, productId, amounts[i]);
         }
 
-        if(totalCost > msg.value)
+        if(totalCost != msg.value)
             revert InvalidFunds();
 
         emit ProductsBought(productIds, amounts, msg.sender);
     }
 
-    function convertDollarToPriceInCrypto(uint256 productId) public view returns (uint256) {
+    function getLatestData() public view returns (int) {
         //(,int price,,,) = dataFeed.latestRoundData(); TODO
         int256 price = 180000000000; // hardcoded value ($1800) for local testing
-        uint256 adjustedPrice = uint256(price) * 10 ** 10;
-        uint256 priceInUsd = productInfo[productId].priceInDollars * (10 ** 18);
-        uint256 priceInCrypto = (priceInUsd * 10 ** 18) / adjustedPrice;
+        return price;
+    }
+
+    function calculatePriceInEth(uint256 dollarAmount, int256 ethPrice) private pure returns (uint256) {
+        uint256 adjustedEthPrice = uint256(ethPrice) * 10 ** 10;
+        uint256 priceInUsd = dollarAmount * (10 ** 18);
+        uint256 priceInCrypto = (priceInUsd * 10 ** 18) / adjustedEthPrice;
 
         return priceInCrypto;
     }

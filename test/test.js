@@ -7,7 +7,7 @@ describe('BlockJuice', () => {
         const [owner, testUser, testMerchant, notMerchant] = await hre.ethers.getSigners();
 
         const BlockJuice = await hre.ethers.getContractFactory('BlockJuice');
-        const BlockJuiceContract = await BlockJuice.deploy(1234);  // fee is 12.34%
+        const BlockJuiceContract = await BlockJuice.deploy(1234, '0x694AA1769357215DE4FAC081bf1f309aDC325306');  // fee is 12.34%
         await BlockJuiceContract.deployed();
 
         const MERCHANT_ROLE = await BlockJuiceContract.MERCHANT_ROLE();
@@ -16,8 +16,8 @@ describe('BlockJuice', () => {
 
         // Mint dummy products(for testing purpose)
         await BlockJuiceContract.connect(testMerchant).registerProduct(3000, 10);  // changing price will break tests
-        await BlockJuiceContract.connect(testMerchant).registerProduct(10, ethers.utils.parseUnits('0.3'));
-        await BlockJuiceContract.connect(testMerchant).registerProduct(50, ethers.utils.parseUnits('0.2'));
+        await BlockJuiceContract.connect(testMerchant).registerProduct(10, 30);
+        await BlockJuiceContract.connect(testMerchant).registerProduct(50, 20);
         const DUMMY_PRODUCT_ID = 0;
 
         return { BlockJuiceContract, owner, testUser, testMerchant, notMerchant, DUMMY_PRODUCT_ID, MERCHANT_ROLE };
@@ -63,11 +63,11 @@ describe('BlockJuice', () => {
             await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 3], [10, 10, 10], { value: ethers.utils.parseUnits('10') }))
                 .to.revertedWithCustomError(BlockJuiceContract, 'InvalidProductID');
 
-            await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 2], [10, 10, 10], { value: ethers.utils.parseUnits('1') }))
+            await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 2], [10, 10, 10], { value: ethers.utils.parseUnits('0.1') }))
                 .to.revertedWithCustomError(BlockJuiceContract, 'InvalidFunds');
 
-            await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 2], [10, 10, 10], { value: ethers.utils.parseUnits('10') }))
-                .to.emit(BlockJuiceContract, 'ProductsBought').withArgs([0, 1, 2], [10, 10, 10], testUser.address);
+            await expect(BlockJuiceContract.connect(testUser).buyProductBatch([0, 1, 2], [50, 5, 8], { value: '449999999999999968' }))
+                .to.emit(BlockJuiceContract, 'ProductsBought').withArgs([0, 1, 2], [50, 5, 8], testUser.address);
         });
 
         it('Test authentication functions for merchant', async () => {
