@@ -7,7 +7,9 @@ module.exports = {
   networks: {
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_SEPOLIA_KEY}`,
-      accounts: [`0x${process.env.PRIVATE_KEY}`]
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      gas: 2100000,
+      gasPrice: 8000000000,
     }
   },
   settings: {
