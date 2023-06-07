@@ -4,7 +4,7 @@ Experience the future of purchasing fresh homemade juices with cryptocurrency th
 
 ## Features (implemented for now):
 - Buying multiple products in single transaction
-- Using Chainlink Data Feeds to convert product price to price in crypto
+- Using Chainlink Price Feeds to convert product price to price in crypto
 - Role-based access control mechanisms with OpenZeppelin's [AccessControl](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/AccessControl.sol). This allows only merchants to register new products and to transfer ownership if project is sold
 - Fee system (with 2 decimals) for splitting funds between merchant and owner of smart contract
 - Lottery based on tipping when buying single product for chance to get double rewards for the price of one
@@ -17,14 +17,14 @@ Install the dependencies with:
 yarn install
 ```
 
-To deploy to Sepolia testnet run the following script:
+To deploy to Sepolia testnet, run the following script:
 ```shell
 yarn hardhat run scripts/deploy.js --network sepolia
 ```
 
 Address (and abi) of deployed contract will be saved in file frontend.json.
 
-To run tests on local Ethereum network (built-in with Hardhat) run following script:
+To run tests on local Ethereum network (built-in with Hardhat), first comment line no. 101 and uncomment line no. 102 (to use hardcoded value for ETH price on local network instead of Chainlink Price Feed), and then run following script:
 ```shell
 yarn hardhat test
 ```
