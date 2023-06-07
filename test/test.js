@@ -15,9 +15,9 @@ describe('BlockJuice', () => {
         await BlockJuiceContract.grantRole(MERCHANT_ROLE, testMerchant.address);
 
         // Mint dummy products(for testing purpose)
-        await BlockJuiceContract.connect(testMerchant).registerProduct(3000, 10);  // changing price will break tests
-        await BlockJuiceContract.connect(testMerchant).registerProduct(10, 30);
-        await BlockJuiceContract.connect(testMerchant).registerProduct(50, 20);
+        await BlockJuiceContract.connect(testMerchant).registerProduct(3000, 10, '');  // changing price will break tests
+        await BlockJuiceContract.connect(testMerchant).registerProduct(10, 30, '');
+        await BlockJuiceContract.connect(testMerchant).registerProduct(50, 20, '');
         const DUMMY_PRODUCT_ID = 0;
 
         return { BlockJuiceContract, owner, testUser, testMerchant, notMerchant, DUMMY_PRODUCT_ID, MERCHANT_ROLE };
@@ -30,13 +30,13 @@ describe('BlockJuice', () => {
             const price = ethers.utils.parseUnits('0.1');
 
             // Revert if MERCHANT_ROLE is not set
-            await expect(BlockJuiceContract.connect(notMerchant).registerProduct(amount, price))
+            await expect(BlockJuiceContract.connect(notMerchant).registerProduct(amount, price, ''))
                 .to.revertedWithCustomError(BlockJuiceContract, 'UnauthorizedAccess');
 
             // Grant role
             await BlockJuiceContract.grantRole(MERCHANT_ROLE, notMerchant.address);
 
-            await expect(BlockJuiceContract.connect(notMerchant).registerProduct(amount, price))
+            await expect(BlockJuiceContract.connect(notMerchant).registerProduct(amount, price, ''))
                 .to.emit(BlockJuiceContract, 'TransferSingle').withArgs(notMerchant.address, ethers.constants.AddressZero, notMerchant.address, DUMMY_PRODUCT_ID + 3, amount)
                 .to.emit(BlockJuiceContract, 'ProductRegistered').withArgs(DUMMY_PRODUCT_ID + 3, amount, price);
         });

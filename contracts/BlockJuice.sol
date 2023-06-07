@@ -24,7 +24,7 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
     uint256 private ownerBalance;
     uint256 private platformFee;
 
-    constructor(uint256 _platfromFee, address chainlinkPriceFeedAddress) ERC1155(''){
+    constructor(uint256 _platfromFee, address chainlinkPriceFeedAddress) ERC1155('') {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         dataFeed = AggregatorV3Interface(chainlinkPriceFeedAddress);
         idOfNextProduct = 0;
@@ -99,7 +99,7 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
 
     function getLatestData() public view returns (int) {
         (,int price,,,) = dataFeed.latestRoundData();
-        //int256 price = 180000000000; // hardcoded value ($1800) for local testing
+        //int256 price = 180000000000; // TODO: hardcoded value ($1800) for local testing
         return price;
     }
 
@@ -121,12 +121,13 @@ contract BlockJuice is ERC1155, AccessControl, IBlockJuice {
      *      Authentication functions for merchants
      */
 
-    function registerProduct(uint256 amount, uint256 price) public {
+    function registerProduct(uint256 amount, uint256 price, string memory uri) public {
         if(!hasRole(MERCHANT_ROLE, msg.sender))
             revert UnauthorizedAccess();
-        
+
         productInfo[idOfNextProduct].productOwner = msg.sender;
         productInfo[idOfNextProduct].priceInDollars = price;
+        productInfo[idOfNextProduct].productUri = uri;
         _mint(msg.sender, idOfNextProduct, amount, '');
         
         emit ProductRegistered(idOfNextProduct, amount, price);
