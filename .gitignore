@@ -1,7 +1,6 @@
 artifacts/
 cache/
 node_modules/
-README.md
 yarn-error.log
 tmp.txt
 .env
